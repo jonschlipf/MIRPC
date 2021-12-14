@@ -8,6 +8,7 @@ import plotly.express as px
 from flask import Flask,render_template,request,Response
 app = Flask(__name__)
 
+#create variables
 grating=0
 wlfilter=0
 entr_slit=2.0
@@ -30,12 +31,14 @@ def index():
     global wavelength
     global wlmin,wlmax,wlstp
     global stage_x,stage_y,stage_z
+    #mock random plot
     N = 40
     x = np.linspace(0, 1, N)
     y = np.random.randn(N)
     df=pd.DataFrame({'x': x, 'y': y})
     fig=px.line(df,x='x',y='y')
     graphJSON=json.dumps(fig,cls=plotly.utils.PlotlyJSONEncoder)
+    #deal with html buttons/fields
     if request.method == 'POST':
         if request.form.get('action1') == 'VALUE1':
             print('a')
@@ -107,6 +110,7 @@ def index():
             stage_y=2.0
             stage_z=3
     filename="blarg"
+    #fill html template
     return render_template('index.html',
                            graphJSON=graphJSON,
                            grating_preselect=grating,
@@ -122,11 +126,12 @@ def index():
                            wavelength_preselect=str(wavelength),
                            filename_preselect=filename)
 
-
+#make plotly available
 @app.route('/plotly.js')
 def plotlyjs():
     return Response(open('templates/plotly-latest.min.js').read(),mimetype="text/html")
 
+#run app
 if __name__ == '__main__':
     app.debug = True
     app.run()
