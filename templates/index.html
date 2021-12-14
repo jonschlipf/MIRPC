@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+	<head lang="en">
+		<meta charset="UTF-8">
+		<title>MIR Photocurrent Control</title>
+	</head>
+	<body>
+		<script src="plotly.js"></script>
+		<h1>EFM Mid-IR Photocurrent Measurement</h1>
+		<table width="100%" border="0">
+			<tr>
+				<td>
+					<h3>Monochromator</h3>
+					<form method="post" action="/">
+						Grating
+						<select name="grating" id="grating">
+							<option value="0"{%if grating_preselect==0%} SELECTED {%endif%}>G1: 150 lines / mm</option>
+							<option value="1"{%if grating_preselect==1%} SELECTED {%endif%}>G2: 300 lines / mm</option>
+							<option value="2"{%if grating_preselect==2%} SELECTED {%endif%}>G3: 600 lines / mm</option>
+						</select>
+						<input type="submit" name="grating_submit" value="Submit">
+					</form>
+					<form method="post" action="/">
+						Filter
+						<select name="filter" id="filter">
+						<option value="0"{%if filter_preselect==0%} SELECTED {%endif%}>Auto</option>
+						<option value="1"{%if filter_preselect==1%} SELECTED {%endif%}>F1</option>
+						<option value="2"{%if filter_preselect==2%} SELECTED {%endif%}>F2</option>
+						<option value="3"{%if filter_preselect==3%} SELECTED {%endif%}>F3</option>
+						<option value="4"{%if filter_preselect==4%} SELECTED {%endif%}>F4</option>
+						<option value="5"{%if filter_preselect==5%} SELECTED {%endif%}>F5</option>
+						<option value="6"{%if filter_preselect==6%} SELECTED {%endif%}>F6</option>
+						</select>
+						<input type="submit" name="filter_submit" value="Submit">
+					</form>
+					<form method="post" action="/">
+						Entrance slit
+						<input type="text" name="entr_slit" value={{entr_slit_preselect}}>
+						<input type="submit" name="entr_slit_submit" value="Submit">
+					</form>
+					<form method="post" action="/">
+						Exit slit
+						<input type="text" name="exit_slit" value={{exit_slit_preselect}}>
+						<input type="submit" name="exit_slit_submit" value="Submit">
+					</form>
+					<form method="post" action="/">
+						Wavelength
+						<input type="text" name="wavelength" value={{wavelength_preselect}}>
+						<input type="submit" name="wavelength_submit" value="Submit">
+					</form>
+				</td>
+				<td>
+					<h3>Detector<h3/>
+					<form method="post" action="/">
+						<input type="submit" value="VALUE1" name="action1"/>
+						<input type="submit" value="VALUE2" name="action2" />
+					</form>
+				</td>
+			</tr>
+			<tr>
+				<div id='chart' class='chart'></div>
+			</tr>
+			<tr>
+				<form method="post" action="/">
+					λ_min/nm
+					<input type="text" name="wlmin" value={{wlmin_preselect}}>
+					λ_step/nm
+					<input type="text" name="wlstp" value={{wlstp_preselect}}>
+					λ_max/nm
+					<input type="text" name="wlmax" value={{wlmax_preselect}}>
+					<input type="submit" value="Spectrum" name="wlsweep" />
+					<input type="text" name="filename" value={{filename_preselect}}>
+					<input type="submit" value="Save CSV" name="savecsv" />
+				</form>
+			</tr>
+			<tr>
+				<td>
+					<h3>Stage</h3>
+					<form method="post" action="/">
+						Stage x position
+						<input type="text" name="stage_x" value={{stage_x_preselect}}>
+						<input type="submit" name="stage_x_submit" value="Submit">
+					</form>
+					<form method="post" action="/">
+						Stage y position
+						<input type="text" name="stage_y" value={{stage_y_preselect}}>
+						<input type="submit" name="stage_y_submit" value="Submit">
+					</form>
+					<form method="post" action="/">
+						Stage z position
+						<input type="text" name="stage_z" value={{stage_z_preselect}}>
+						<input type="submit" name="stage_z_submit" value="Submit">
+					</form>
+					<form method="post" action="/">
+						<input type="submit" name="autoset" value="Autoset">
+					</form>
+				</td>
+			</tr>
+		</table>
+	</body>
+		<script type='text/javascript'>
+			var graphs={{graphJSON | safe}};
+			Plotly.plot('chart',graphs,{});
+		</script>
+</html>
