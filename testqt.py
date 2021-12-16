@@ -3,7 +3,10 @@ from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QPushButton, QMessage
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg,NavigationToolbar2QT
 import matplotlib.pyplot as plt
 import random
-import mono
+import monochromator
+
+mono=monochromator.Monochromator()
+
 class App(QWidget):
 
     def __init__(self):
@@ -20,6 +23,7 @@ class App(QWidget):
         self.grating_label=QLabel('Grating')
         self.grating_box=QComboBox(self)
         self.grating_box.addItems(['G1','G2','G3'])
+        self.grating_box.setCurrentIndex(mono.get_grating())
         self.grating_box.currentIndexChanged.connect(self.grating_changed)
         mono_grating_layout=QHBoxLayout()
         mono_grating_layout.addWidget(self.grating_label)
@@ -27,6 +31,7 @@ class App(QWidget):
 
         self.wavelength_label=QLabel('Wavelength λ / nm')
         self.wavelength_box=QLineEdit(self)
+        self.wavelength_box.setText(str(mono.get_wavelength()))
         self.wavelength_button=QPushButton('Submit',self)
         self.wavelength_button.clicked.connect(self.wavelength_button_clicked)
         mono_wl_layout=QHBoxLayout()
@@ -37,6 +42,7 @@ class App(QWidget):
         self.filter_label=QLabel('Filter')
         self.filter_box=QComboBox(self)
         self.filter_box.addItems(['Auto','F1','F2','F3','F4','F5','F6'])
+        self.filter_box.setCurrentIndex(mono.get_filter())
         self.filter_box.currentIndexChanged.connect(self.filter_changed)
         mono_filter_layout=QHBoxLayout()
         mono_filter_layout.addWidget(self.filter_label)
@@ -44,6 +50,7 @@ class App(QWidget):
 
         self.entr_slit_label=QLabel('Entrance slit')
         self.entr_slit_box=QLineEdit(self)
+        self.entr_slit_box.setText(str(mono.get_entr_slit()))
         self.entr_slit_button=QPushButton('Submit',self)
         self.entr_slit_button.clicked.connect(self.entr_slit_button_clicked)
         mono_entr_slit_layout=QHBoxLayout()
@@ -53,8 +60,9 @@ class App(QWidget):
 
         self.exit_slit_label=QLabel('Exit slit')
         self.exit_slit_box=QLineEdit(self)
+        self.exit_slit_box.setText(str(mono.get_exit_slit()))
         self.exit_slit_button=QPushButton('Submit',self)
-        self.exit_slit_button.clicked.connect(self.wavelength_button_clicked)
+        self.exit_slit_button.clicked.connect(self.exit_slit_button_clicked)
         mono_exit_slit_layout=QHBoxLayout()
         mono_exit_slit_layout.addWidget(self.exit_slit_label)
         mono_exit_slit_layout.addWidget(self.exit_slit_box)
@@ -85,16 +93,33 @@ class App(QWidget):
         ax.plot(data,'*-')
         self.canvas.draw()
     def wavelength_button_clicked(self):
-        mono.setwl2(self.wavelength_box.text())
-        #self.wavelength_box.setText("blarg")
+        try:
+            mono.set_wavelength(float(self.wavelength_box.text()))
+        except ValueError:
+            print("wrong type")
+        self.wavelength_box.setText(str(mono.get_wavelength()))
     def grating_changed(self,i):
-        print(i)
+        try:
+            mono.set_grating(int(i))
+        except ValueError:
+            print("wrong type")
     def filter_changed(self,i):
-        print(i)
+        try:
+            mono.set_filter(int(i))
+        except ValueError:
+            print("wrong type")
     def entr_slit_button_clicked(self):
-        mono.setwl2(self.entr_slit_box.text())
+        try:
+            mono.set_entr_slit(float(self.entr_slit_box.text()))
+        except ValueError:
+            print("wrong type")
+        self.entr_slit_box.setText(str(mono.get_entr_slit()))
     def exit_slit_button_clicked(self):
-        mono.setwl2(self.exit_slit_box.text())
+        try:
+            mono.set_exit_slit(float(self.exit_slit_box.text()))
+        except ValueError:
+            print("wrong type")
+        self.exit_slit_box.setText(str(mono.get_exit_slit()))
 
     
 

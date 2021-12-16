@@ -3,7 +3,7 @@ import numpy as np
 import json
 import plotly
 import plotly.express as px
-
+import monochromator
 
 from flask import Flask,render_template,request,Response
 app = Flask(__name__)
@@ -21,6 +21,7 @@ stage_x=0.0
 stage_y=0.0
 stage_z=0.0
 
+mono=monochromator.Monochromator()
 
 @app.route('/',methods=['GET','POST'])
 def index():
@@ -28,7 +29,6 @@ def index():
     global wlfilter
     global entr_slit
     global exit_slit
-    global wavelength
     global wlmin,wlmax,wlstp
     global stage_x,stage_y,stage_z
     #mock random plot
@@ -45,29 +45,25 @@ def index():
         elif  request.form.get('action2') == 'VALUE2':
             print('b')
         elif request.form.get('grating_submit')=='Submit':
-            grating=int(request.form['grating'])
-            print(grating)
+            mono.set_grating(int(request.form['grating']))
         elif request.form.get('filter_submit')=='Submit':
-            wlfilter=int(request.form['filter'])
-            print(wlfilter)
+            mono.set_filter(int(request.form['filter']))
         elif request.form.get('entr_slit_submit')=='Submit':
             try:
-                entr_slit=float(request.form['entr_slit'])
+                mono.set_entr_slit(float(request.form['entr_slit']))
             except ValueError:
                 print("not a float")
-            print(entr_slit)
         elif request.form.get('exit_slit_submit')=='Submit':
             try:
-                exit_slit=float(request.form['exit_slit'])
+                mono.set_exit_slit(float(request.form['exit_slit']))
             except ValueError:
                 print("not a float")
-            print(exit_slit)
         elif request.form.get('wavelength_submit')=='Submit':
             try:
-                wavelength=float(request.form['wavelength'])
+                mono.set_wavelength(float(request.form['wavelength']))
             except ValueError:
                 print("not a float")
-            print(wavelength)
+            print(mono.get_wavelength())
         elif request.form.get('wlsweep')=='Spectrum':
             try:
                 wlmin=float(request.form['wlmin'])
@@ -113,17 +109,17 @@ def index():
     #fill html template
     return render_template('index.html',
                            graphJSON=graphJSON,
-                           grating_preselect=grating,
-                           filter_preselect=wlfilter,
+                           grating_preselect=mono.get_grating(),
+                           filter_preselect=mono.get_filter(),
                            wlmin_preselect=str(wlmin),
                            wlstp_preselect=str(wlstp),
                            wlmax_preselect=str(wlmax),
                            stage_x_preselect=str(stage_x),
                            stage_y_preselect=str(stage_y),
                            stage_z_preselect=str(stage_z),
-                           entr_slit_preselect=str(entr_slit),
-                           exit_slit_preselect=str(exit_slit),
-                           wavelength_preselect=str(wavelength),
+                           entr_slit_preselect=str(mono.get_entr_slit()),
+                           exit_slit_preselect=str(mono.get_exit_slit()),
+                           wavelength_preselect=str(mono.get_wavelength()),
                            filename_preselect=filename)
 
 #make plotly available
