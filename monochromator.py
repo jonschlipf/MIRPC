@@ -20,8 +20,8 @@ class Monochromator():
         # set the active configuration. With no arguments, the first
         # configuration will be the active one
         self.dev.set_configuration()
-        print(self.dev.ctrl_transfer(B_REQUEST_IN, 179, 0, 1, 4) )
-        print(bytearray(self.dev.ctrl_transfer(B_REQUEST_IN, 6, 0x302, 27, 512)))
+        #print(self.dev.ctrl_transfer(B_REQUEST_IN, 179, 0, 1, 4) )
+        #print(bytearray(self.dev.ctrl_transfer(B_REQUEST_IN, 6, 0x302, 27, 512)))
         self.wavelength=self._get_wavelength_int()
         self.grating=self._get_grating_int()
         self.entr_slit=self._get_entr_slit_int()
@@ -111,7 +111,7 @@ class Monochromator():
     def set_wavelength(self,wl0):
         if (wl0<0) or (wl0>1580 * 1200 /(150*2**self._get_grating_int())):
             wl0=0
-        while abs(wl0-self._get_wavelength_int())>.01:
+        while abs(wl0-self._get_wavelength_int())>.001*wl0:
             wl=wl0*(150*2**self._get_grating_int())/1200
             self.dev.ctrl_transfer(B_REQUEST_OUT, BM_REQUEST_TYPE, 0x00, 4, struct.pack("<f", wl))
             time.sleep(.01)

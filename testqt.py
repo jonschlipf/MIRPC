@@ -4,8 +4,12 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg,NavigationToolb
 import matplotlib.pyplot as plt
 import random
 import monochromator
+import mfli
+import time
+import numpy as np
 
 mono=monochromator.Monochromator()
+lockin=mfli.MFLI()
 
 class App(QWidget):
 
@@ -17,8 +21,6 @@ class App(QWidget):
         self.figure=plt.figure()
         self.canvas=FigureCanvasQTAgg(self.figure)
         self.toolbar=NavigationToolbar2QT(self.canvas,self)
-        self.scan_button=QPushButton('Scan',self)
-        self.scan_button.clicked.connect(self.plot)
 
         self.grating_label=QLabel('Grating')
         self.grating_box=QComboBox(self)
@@ -75,22 +77,114 @@ class App(QWidget):
         mono_layout.addLayout(mono_entr_slit_layout)
         mono_layout.addLayout(mono_exit_slit_layout)
 
+        self.oscillator_label=QLabel('Oscillator')
+        self.oscillator_box=QLineEdit(self)
+        self.oscillator_box.setText("{:.2f}".format(lockin.get_oscillator()))
+        self.oscillator_button=QPushButton('Submit',self)
+        self.oscillator_button.clicked.connect(self.oscillator_button_clicked)
+        lockin_oscillator_layout=QHBoxLayout()
+        lockin_oscillator_layout.addWidget(self.oscillator_label)
+        lockin_oscillator_layout.addWidget(self.oscillator_box)
+        lockin_oscillator_layout.addWidget(self.oscillator_button)
+
+        self.lockin_harmonic_label=QLabel('Lock-in harmonic')
+        self.lockin_harmonic_box=QLineEdit(self)
+        self.lockin_harmonic_box.setText("{:.0f}".format(lockin.get_harmonic()))
+        self.lockin_harmonic_button=QPushButton('Submit',self)
+        self.lockin_harmonic_button.clicked.connect(self.lockin_harmonic_button_clicked)
+        lockin_harmonic_layout=QHBoxLayout()
+        lockin_harmonic_layout.addWidget(self.lockin_harmonic_label)
+        lockin_harmonic_layout.addWidget(self.lockin_harmonic_box)
+        lockin_harmonic_layout.addWidget(self.lockin_harmonic_button)
+
+        self.lockin_order_label=QLabel('Lock-in LPF order')
+        self.lockin_order_box=QLineEdit(self)
+        self.lockin_order_box.setText("{:.0f}".format(lockin.get_order()))
+        self.lockin_order_button=QPushButton('Submit',self)
+        self.lockin_order_button.clicked.connect(self.lockin_order_button_clicked)
+        lockin_order_layout=QHBoxLayout()
+        lockin_order_layout.addWidget(self.lockin_order_label)
+        lockin_order_layout.addWidget(self.lockin_order_box)
+        lockin_order_layout.addWidget(self.lockin_order_button)
+
+        self.lockin_timeconst_label=QLabel('Lock-in LPF time constant t / s')
+        self.lockin_timeconst_box=QLineEdit(self)
+        self.lockin_timeconst_box.setText("{:f}".format(lockin.get_timeconst()))
+        self.lockin_timeconst_button=QPushButton('Submit',self)
+        self.lockin_timeconst_button.clicked.connect(self.lockin_timeconst_button_clicked)
+        lockin_timeconst_layout=QHBoxLayout()
+        lockin_timeconst_layout.addWidget(self.lockin_timeconst_label)
+        lockin_timeconst_layout.addWidget(self.lockin_timeconst_box)
+        lockin_timeconst_layout.addWidget(self.lockin_timeconst_button)
+
+        lockin_layout=QVBoxLayout()
+        lockin_layout.addLayout(lockin_oscillator_layout)
+        lockin_layout.addLayout(lockin_harmonic_layout)
+        lockin_layout.addLayout(lockin_order_layout)
+        lockin_layout.addLayout(lockin_timeconst_layout)
+
         instr_layout=QHBoxLayout()
         instr_layout.addLayout(mono_layout)
+        instr_layout.addLayout(lockin_layout)
+
+        self.result_R_box=QLabel('blabla')
+        self.result_phi_box=QLabel('blabla')
+        self.result_R_box.setText("R={:f}".format(lockin.get_R()))
+        self.result_phi_box.setText("phi={:f}°".format(lockin.get_phi()))
+        self.result_update_button=QPushButton('Update result',self)
+        self.result_update_button.clicked.connect(self.result_update_button_clicked)
+
+        result_layout=QHBoxLayout()
+        result_layout.addWidget(QLabel('Lock-in data'))
+        result_layout.addWidget(self.result_R_box)
+        result_layout.addWidget(self.result_phi_box)
+        result_layout.addWidget(self.result_update_button)
+
+        self.scan_lmin_box=QLineEdit(self)
+        self.scan_lmin_box.setText("500")
+        self.scan_lstp_box=QLineEdit(self)
+        self.scan_lstp_box.setText("50")
+        self.scan_lmax_box=QLineEdit(self)
+        self.scan_lmax_box.setText("800")
+        self.scan_button=QPushButton('Scan',self)
+        self.scan_button.clicked.connect(self.plot)
+
+        scan_layout=QHBoxLayout()
+        scan_layout.addWidget(QLabel('l_min'))
+        scan_layout.addWidget(self.scan_lmin_box)
+        scan_layout.addWidget(QLabel('l_stp'))
+        scan_layout.addWidget(self.scan_lstp_box)
+        scan_layout.addWidget(QLabel('l_max'))
+        scan_layout.addWidget(self.scan_lmax_box)
+        scan_layout.addWidget(self.scan_button)
 
         layout=QVBoxLayout()
         layout.addWidget(self.toolbar)
         layout.addWidget(self.canvas)
-        layout.addWidget(self.scan_button)
+        layout.addLayout(scan_layout)
+        layout.addLayout(result_layout)
         layout.addLayout(instr_layout)
         self.setLayout(layout)
         self.show()
 
+
+
     def plot(self):
-        data=[random.random() for i in range(10)]
+        lam=np.arange(float(self.scan_lmin_box.text()),float(self.scan_lmax_box.text()),float(self.scan_lstp_box.text()))
+        print(lam)
+        data=[random.random() for i in range(lam.size)]
+        for i in range(lam.size):
+            print("set wl")
+            print(lam[i])
+            mono.set_wavelength(lam[i])
+            print("wl set")
+            time.sleep(1)
+            data[i]=lockin.get_R()
+            print(data[i])
+        print("done")
         self.figure.clear()
         ax=self.figure.add_subplot(111)
-        ax.plot(data,'*-')
+        ax.plot(lam,data,'*-')
         self.canvas.draw()
     def wavelength_button_clicked(self):
         try:
@@ -120,8 +214,40 @@ class App(QWidget):
         except ValueError:
             print("wrong type")
         self.exit_slit_box.setText(str(mono.get_exit_slit()))
+    def oscillator_button_clicked(self):
+        try:
+            lockin.set_oscillator(float(self.oscillator_box.text()))
+        except ValueError:
+            print("wrong type")
+        time.sleep(.1)
+        self.oscillator_box.setText("{:.2f}".format(lockin.get_oscillator()))
+    def lockin_harmonic_button_clicked(self):
+        try:
+            lockin.set_harmonic(float(self.lockin_harmonic_box.text()))
+        except ValueError:
+            print("wrong type")
+        time.sleep(.1)
+        self.lockin_harmonic_box.setText("{:.0f}".format(lockin.get_harmonic()))
+    def lockin_timeconst_button_clicked(self):
+        try:
+            lockin.set_timeconst(float(self.lockin_timeconst_box.text()))
+        except ValueError:
+            print("wrong type")
+        time.sleep(.1)
+        self.lockin_timeconst_box.setText("{:f}".format(lockin.get_timeconst()))
+    def lockin_order_button_clicked(self):
+        try:
+            lockin.set_order(int(self.lockin_order_box.text()))
+        except ValueError:
+            print("wrong type")
+        time.sleep(.1)
+        self.lockin_order_box.setText("{:.0f}".format(lockin.get_order()))
 
-    
+    def result_update_button_clicked(self):
+        time.sleep(.1)
+        self.result_R_box.setText("R={:f}".format(lockin.get_R()))
+        self.result_phi_box.setText("phi={:f}°".format(lockin.get_phi()))
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
