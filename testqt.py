@@ -1,5 +1,6 @@
 import sys
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QPushButton, QMessageBox, QLineEdit, QMainWindow, QVBoxLayout,QHBoxLayout,QComboBox
+from PyQt5.QtCore import QThread,pyqtSignal
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg,NavigationToolbar2QT
 import matplotlib.pyplot as plt
 import random
@@ -10,6 +11,35 @@ import numpy as np
 
 mono=monochromator.Monochromator()
 lockin=mfli.MFLI()
+
+class SpectrumThread(QThread):
+    _signal=pyqtSignal(list)
+    def __init__(self,caller,ylabel):
+        super(SpectrumThread,self).__init__()
+        self.parent=caller
+        self.ylabel=ylabel
+    def __del__(self):
+        self.wait()
+    def run(self):
+        lam=np.arange(float(self.parent.scan_lmin_box.text()),float(self.parent.scan_lmax_box.text()),float(self.parent.scan_lstp_box.text()))
+        print(lam)
+        data=0*lam
+        for i in range(lam.size):
+            print("set wl")
+            print(lam[i])
+            mono.set_wavelength(lam[i])
+            print("wl set")
+            time.sleep(10*lockin.get_timeconst())
+            data[i]=lockin.get_R()
+            print(data[i])
+            self.parent.figure.clear()
+            ax=self.parent.figure.add_subplot(111)
+            ax.plot(lam,data,'*-')
+            ax.set_xlabel("lambda / nm")
+            ax.set_ylabel(self.ylabel)
+            self.parent.canvas.draw()
+        print("done")
+        self._signal.emit([lam,data])
 
 class App(QWidget):
 
@@ -213,59 +243,44 @@ class App(QWidget):
         layout.addLayout(instr_layout)
         self.setLayout(layout)
         self.show()
-
-
-
     def measure_diode(self):
         lockin.set_input(1)
         mono.set_wavelength(float(self.scan_lmin_box.text()))
         time.sleep(20*lockin.get_timeconst())
-        lam=np.arange(float(self.scan_lmin_box.text()),float(self.scan_lmax_box.text()),float(self.scan_lstp_box.text()))
-        print(lam)
-        data=[random.random() for i in range(lam.size)]
-        for i in range(lam.size):
-            print("set wl")
-            print(lam[i])
-            mono.set_wavelength(lam[i])
-            print("wl set")
-            time.sleep(10*lockin.get_timeconst())
-            data[i]=lockin.get_R()
-            print(data[i])
-            self.figure.clear()
-            ax=self.figure.add_subplot(111)
-            ax.plot(lam,data,'*-')
-            self.canvas.draw()
-        print("done")
-        self.wavelength_box.setText(str(mono.get_wavelength()))
+        self.thread=SpectrumThread(self,"I/A")
+        self.thread._signal.connect(self.measure_diode_received)
+        self.thread.start()
+    def measure_diode_received(self,msg):
+        self.figure.clear()
+        ax=self.figure.add_subplot(111)
+        ax.plot(msg[0],msg[1],'*-')
+        ax.set_xlabel("lambda / nm")
+        ax.set_ylabel("I / A")
+        self.canvas.draw()
         tosv=[]
-        tosv.append(lam)
-        tosv.append(data)
+        tosv.append(msg[0])
+        tosv.append(msg[1])
         np.savetxt("diode.csv", np.array(tosv).T, delimiter=",",header="lambda/nm,I/A")
+        self.wavelength_box.setText("{:.2f}".format(mono.get_wavelength()))
     def measure_ref(self):
         lockin.set_input(0)
         mono.set_wavelength(float(self.scan_lmin_box.text()))
         time.sleep(20*lockin.get_timeconst())
-        lam=np.arange(float(self.scan_lmin_box.text()),float(self.scan_lmax_box.text()),float(self.scan_lstp_box.text()))
-        print(lam)
-        data=[random.random() for i in range(lam.size)]
-        for i in range(lam.size):
-            print("set wl")
-            print(lam[i])
-            mono.set_wavelength(lam[i])
-            print("wl set")
-            time.sleep(10*lockin.get_timeconst())
-            data[i]=lockin.get_R()
-            print(data[i])
-            self.figure.clear()
-            ax=self.figure.add_subplot(111)
-            ax.plot(lam,data,'*-')
-            self.canvas.draw()
-        print("done")
-        self.wavelength_box.setText("{:.2f}".format(mono.get_wavelength()))
+        self.thread=SpectrumThread(self,"V/V")
+        self.thread._signal.connect(self.measure_ref_received)
+        self.thread.start()
+    def measure_ref_received(self,msg):
+        self.figure.clear()
+        ax=self.figure.add_subplot(111)
+        ax.plot(msg[0],msg[1],'*-')
+        ax.set_xlabel("lambda / nm")
+        ax.set_ylabel("I / A")
+        self.canvas.draw()
         tosv=[]
-        tosv.append(lam)
-        tosv.append(data)
+        tosv.append(msg[0])
+        tosv.append(msg[1])
         np.savetxt("reference.csv", np.array(tosv).T, delimiter=",",header="lambda/nm,V/V")
+        self.wavelength_box.setText("{:.2f}".format(mono.get_wavelength()))
     def wavelength_button_clicked(self):
         try:
             mono.set_wavelength(float(self.wavelength_box.text()))
