@@ -22,7 +22,6 @@ class MFLI():
         self.scope.set('fft/spectraldensity', 0)
         self.scope.set('fft/window', 1)
         self.scope.set('save/directory', '/data/LabOne/WebServer')
-        self.set_input(1)#default is current input
         self.daq.setInt('/dev5880/auxouts/3/outputselect', -1)#use aux3 as bias, set to -1
     #set oscillator frequency in Hz
     def set_oscillator(self,freq):
@@ -61,11 +60,15 @@ class MFLI():
     #set lockin current input range
     def set_input_current_range(self,rng):
         self.daq.setDouble('/dev5880/currins/0/range', rng)
+    def auto_input_current_range(self):
+        self.daq.setInt('/dev5880/currins/0/autorange', 1)
     def get_input_current_range(self):
         return self.daq.getDouble('/dev5880/currins/0/range')
     #set lockin voltage input range
     def set_input_voltage_range(self,rng):
         self.daq.setDouble('/dev5880/sigins/0/range', rng)
+    def auto_input_voltage_range(self):
+        self.daq.setInt('/dev5880/sigins/0/autorange', 1)
     def get_input_voltage_range(self):
         return self.daq.getDouble('/dev5880/sigins/0/range')
     #set lockin voltage output range
