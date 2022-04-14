@@ -12,10 +12,38 @@ import numpy as np
 mono=monochromator.Monochromator()
 lockin=mfli.MFLI()
 
-class SpectrumThread(QThread):
+class SpectrumThreadI(QThread):
     _signal=pyqtSignal(list)
     def __init__(self,caller,ylabel):
-        super(SpectrumThread,self).__init__()
+        super(SpectrumThreadI,self).__init__()
+        self.parent=caller
+        self.ylabel=ylabel
+    def __del__(self):
+        self.wait()
+    def run(self):
+        lam=np.arange(float(self.parent.scan_lmin_box.text()),float(self.parent.scan_lmax_box.text())+float(self.parent.scan_lstp_box.text()),float(self.parent.scan_lstp_box.text()))
+        print(lam)
+        data=0*lam
+        for i in range(lam.size):
+            print("set wl")
+            print(lam[i])
+            mono.set_wavelength(lam[i])
+            print("wl set")
+            time.sleep(10*lockin.get_timeconst())
+            data[i]=lockin.get_R()
+            print(data[i])
+            self.parent.figure.clear()
+            ax=self.parent.figure.add_subplot(111)
+            ax.plot(lam,data,'*-')
+            ax.set_xlabel("lambda / nm")
+            ax.set_ylabel(self.ylabel)
+            self.parent.canvas.draw()
+        print("done")
+        self._signal.emit([lam,data])
+class SpectrumThreadV(QThread):
+    _signal=pyqtSignal(list)
+    def __init__(self,caller,ylabel):
+        super(SpectrumThreadV,self).__init__()
         self.parent=caller
         self.ylabel=ylabel
     def __del__(self):
@@ -30,7 +58,7 @@ class SpectrumThread(QThread):
             mono.set_wavelength(lam[i])
             print("wl set")
             time.sleep(10*lockin.get_timeconst())
-            data[i]=lockin.get_R()
+            data[i]=lockin.get_Y()
             print(data[i])
             self.parent.figure.clear()
             ax=self.parent.figure.add_subplot(111)
@@ -247,7 +275,7 @@ class App(QWidget):
         lockin.set_input(1)
         mono.set_wavelength(float(self.scan_lmin_box.text()))
         time.sleep(20*lockin.get_timeconst())
-        self.thread=SpectrumThread(self,"I/A")
+        self.thread=SpectrumThreadI(self,"I/A")
         self.thread._signal.connect(self.measure_diode_received)
         self.thread.start()
     def measure_diode_received(self,msg):
@@ -266,7 +294,7 @@ class App(QWidget):
         lockin.set_input(0)
         mono.set_wavelength(float(self.scan_lmin_box.text()))
         time.sleep(20*lockin.get_timeconst())
-        self.thread=SpectrumThread(self,"V/V")
+        self.thread=SpectrumThreadV(self,"V/V")
         self.thread._signal.connect(self.measure_ref_received)
         self.thread.start()
     def measure_ref_received(self,msg):

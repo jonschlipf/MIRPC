@@ -23,13 +23,14 @@ class MFLI():
         self.scope.set('fft/window', 1)
         self.scope.set('save/directory', '/data/LabOne/WebServer')
         self.daq.setInt('/dev5880/auxouts/3/outputselect', -1)#use aux3 as bias, set to -1
+        self.daq.setDouble('/dev5880/oscs/0/freq', 5.67)
     #set oscillator frequency in Hz
     def set_oscillator(self,freq):
         self.daq.setDouble('/dev5880/oscs/0/freq', freq)
         if freq>10:
             self.daq.setInt('/dev5880/demods/0/sinc', 1)
         else:
-            self.daq.setInt('/dev5880/demods/0/sinc', 1)
+            self.daq.setInt('/dev5880/demods/0/sinc', 0)
     def get_oscillator(self):
         return self.daq.getDouble('/dev5880/oscs/0/freq')
     #set oscillator output on/off
@@ -95,5 +96,8 @@ class MFLI():
     def get_phi(self):
         s=self.get_Sample()
         return math.atan(s["y"][0]/s["x"][0])*180/math.pi
+    def get_Y(self):
+        s=self.get_Sample()
+        return s["y"][0]
 
        
