@@ -7,10 +7,9 @@ class Stage(ABC):
         pass
 
 class C863(Stage):
-    def __init__(self,instr,bus_address,minpos,maxpos):
+    def __init__(self,instr,bus_address,maxpos):
         self.instr=instr
         self.maxpos=maxpos
-        self.minpos=minpos
         if bus_address==1: #only one implemented
             self.instr.write_raw(b'\x01\x31') #default bus address is 0
         else:
@@ -18,13 +17,23 @@ class C863(Stage):
     def get_name(self):
         return self.instr.query("VE\r")
     def go_low(self):
-        print("finding stage home")
+        print("finding stage home at low end")
         self.instr.write("MN\r")
         time.sleep(1)
         self.instr.write('FE1\r')
         time.sleep(5)
         self.instr.write('DH\r')
-        print("stage home found")
+     #   print("stage home found")
+    def go_center(self):
+        print("finding stage home at center")
+        self.instr.write("MN\r")
+        self.instr.write("BF\r")
+        time.sleep(1)
+        self.instr.write(f"MA80000\r")
+        time.sleep(5)
+        self.instr.write('FE2\r')
+        time.sleep(5)
+        self.instr.write('DH\r')
 
     def get_status(self):
         return self.instr.query("TS\r")
@@ -34,7 +43,7 @@ class C863(Stage):
         else:
             self.instr.write("MF\r")
     def set_position(self,target:int):
-        if (target<=self.maxpos) and (target>=self.minpos):
+        if (target<=self.maxpos) and (target>=0):
             self.instr.write(f"MA{str(target)}\r")
         else:
             print("out of range")
@@ -109,20 +118,21 @@ class Stage3():
         xstage_instr=self.rm.list_resources()[find_xstage(self.rm)] 
         ystage_instr=self.rm.list_resources()[find_ystage(self.rm)]
         zstage_instr=self.rm.list_resources()[find_zstage(self.rm)]
-        self.xstage=C863(self.rm.open_resource(xstage_instr),0,00000,275000)
+        self.xstage=C863(self.rm.open_resource(xstage_instr),0,275000)
         self.xstage.go_low()
         self.ystage=C867(self.rm.open_resource(ystage_instr),0)
-        self.zstage=C863(self.rm.open_resource(zstage_instr),1,100000,270000)
+        self.zstage=C863(self.rm.open_resource(zstage_instr),1,500000)
+        self.zstage.go_center()
         self.xstage.set_drive_status(1)
         self.ystage.set_drive_status(1)
         self.zstage.set_drive_status(1)
     def set_pos_mm(self,x,y,z):
         self.xstage.set_position(int(round((x+0)*10**4)))
         self.ystage.set_position(y)
-        self.zstage.set_position(int(round(z*2*10**3)+100000))
+        self.zstage.set_position(int(round(z*2*10**3)))
 
     def get_pos_mm(self):
-        xp=float(self.xstage.get_position()[3:])/(10**4)
+        xp=float(self.xstage.get_position()[3:])/(10**4)-0
         yp=float(self.ystage.get_position()[6:])
-        zp=(float(self.zstage.get_position()[3:])-100000)/(2*10**3)
+        zp=float(self.zstage.get_position()[3:])/(2*10**3)
         return [xp,yp,zp]

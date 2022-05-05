@@ -24,10 +24,11 @@ class Monochromator():
         bytearray(self.dev.ctrl_transfer(B_REQUEST_IN, 6, 0x302, 27, 512))
         self.dev.ctrl_transfer(B_REQUEST_OUT, BM_REQUEST_TYPE, 0, 0, 0) #init
         while self.busy_filter() or self.busy_grating() or self.busy_144():
-            print("busy")
+            print("Initializing monochromator")
             time.sleep(1)
         self.wavelength=self._get_wavelength_int()
         self.grating=self._get_grating_int()
+        print("Monochromator ready")
 
     def _get_grating_int(self):
         g=self.dev.ctrl_transfer(B_REQUEST_IN, BM_REQUEST_TYPE, 0x0, 16, 4)
@@ -36,7 +37,7 @@ class Monochromator():
         g=g%3 #make sure it stays in range
         temp_wl=self.get_wavelength()
         while self._get_grating_int()!=g:
-            print("move")
+            print("setting grating")
             self.dev.ctrl_transfer(B_REQUEST_OUT, BM_REQUEST_TYPE, 0x0, 17, struct.pack("<i", g))
             while self.busy_grating():
                 time.sleep(1)
@@ -59,12 +60,12 @@ class Monochromator():
         g=g%7 #make sure it stays in range
         if g==0: #auto filter not yet implemented
             g=6
-        print(g)
+        #print(g)
         while self.get_filter()!=g:
-            print("move")
+            #print("move")
             self.dev.ctrl_transfer(B_REQUEST_OUT, BM_REQUEST_TYPE, 0x0, 20, struct.pack("<i", g))
             while self.busy_filter():
-                print("busy")
+                print("setting filter")
                 time.sleep(1)
             time.sleep(1)
     def busy_144(self):
