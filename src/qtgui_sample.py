@@ -3,9 +3,10 @@ from PyQt5.QtCore import QThread,pyqtSignal
 import time
 
 class QtGuiSample(QVBoxLayout):
-    def __init__(self,lockin):
+    def __init__(self,lockin,stage):
         super().__init__()
         self.lockin=lockin
+        self.stage=stage
         
 
         self.sample_bias_label=QLabel('DUT voltage bias / V')
@@ -18,7 +19,7 @@ class QtGuiSample(QVBoxLayout):
         sample_bias_layout.addWidget(self.sample_bias_box)
         sample_bias_layout.addWidget(self.sample_bias_button)
 
-        self.sample_irange_label=QLabel('DUT input current range / I')
+        self.sample_irange_label=QLabel('DUT input current range / A')
         self.sample_irange_box=QLineEdit()
         self.sample_irange_box.setText("{:f}".format(self.lockin.get_input_current_range()))
         self.sample_irange_button=QPushButton('Submit')
@@ -31,8 +32,30 @@ class QtGuiSample(QVBoxLayout):
         sample_irange_layout.addWidget(self.sample_irange_button)
         sample_irange_layout.addWidget(self.sample_irange_auto_button)
 
+        stagepos=self.stage.get_pos_mm()
+        self.sample_x_label=QLabel('x / mm')
+        self.sample_x_box=QLineEdit()
+        self.sample_x_box.setText("{:f}".format(stagepos[0]))
+        self.sample_y_label=QLabel('y / mm')
+        self.sample_y_box=QLineEdit()
+        self.sample_y_box.setText("{:f}".format(stagepos[1]))
+        self.sample_z_label=QLabel('z / mm')
+        self.sample_z_box=QLineEdit()
+        self.sample_z_box.setText("{:f}".format(stagepos[2]))
+        self.sample_pos_button=QPushButton('Submit')
+        self.sample_pos_button.clicked.connect(self.sample_pos_button_clicked)
+        sample_pos_layout=QHBoxLayout()
+        sample_pos_layout.addWidget(self.sample_x_label)
+        sample_pos_layout.addWidget(self.sample_x_box)
+        sample_pos_layout.addWidget(self.sample_y_label)
+        sample_pos_layout.addWidget(self.sample_y_box)
+        sample_pos_layout.addWidget(self.sample_z_label)
+        sample_pos_layout.addWidget(self.sample_z_box)
+        sample_pos_layout.addWidget(self.sample_pos_button)
+
         self.addLayout(sample_bias_layout)
         self.addLayout(sample_irange_layout)
+        self.addLayout(sample_pos_layout)
     def sample_irange_button_clicked(self):
         try:
             self.lockin.set_input_current_range(float(self.sample_irange_box.text()))
@@ -45,7 +68,7 @@ class QtGuiSample(QVBoxLayout):
             self.lockin.auto_input_current_range()
         except ValueError:
             print("wrong type")
-        time.sleep(10)
+        time.sleep(1)
         self.sample_irange_box.setText("{:f}".format(self.lockin.get_input_current_range()))
     def sample_bias_button_clicked(self):
         try:
@@ -54,6 +77,13 @@ class QtGuiSample(QVBoxLayout):
             print("wrong type")
         time.sleep(.1)
         self.sample_bias_box.setText("{:f}".format(self.lockin.get_bias()))
+    def sample_pos_button_clicked(self):
+        self.stage.set_pos_mm(float(self.sample_x_box.text()),float(self.sample_y_box.text()),float(self.sample_z_box.text()))
+        time.sleep(.1)
+        stagepos=self.stage.get_pos_mm()
+        self.sample_x_box.setText("{:f}".format(stagepos[0]))
+        self.sample_y_box.setText("{:f}".format(stagepos[1]))
+        self.sample_z_box.setText("{:f}".format(stagepos[2]))
 
 
 

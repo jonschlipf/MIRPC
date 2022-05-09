@@ -10,10 +10,11 @@ class C863(Stage):
     def __init__(self,instr,bus_address,maxpos):
         self.instr=instr
         self.maxpos=maxpos
-        if bus_address==1: #only one implemented
-            self.instr.write_raw(b'\x01\x31') #default bus address is 0
+        if bus_address==1: #only 0 and 1 implemented
+            self.instr.write_raw(b'\x01\x31') 
         else:
             self.instr.write_raw(b'\x01\x30') #default bus address is 0
+        print(self.on_target())
     def get_name(self):
         return self.instr.query("VE\r")
     def go_low(self):
@@ -49,6 +50,9 @@ class C863(Stage):
             print("out of range")
     def get_position(self):
         return self.instr.query("TP\r")
+    def on_target(self):
+        return int(self.instr.query("TE\r")[3:])<10
+
 
 def find_xstage(rm):
     res=rm.list_resources()
@@ -111,6 +115,10 @@ class C867(Stage):
         self.instr.write(f"2 MOV 1 {str(target)}\n")
     def get_position(self):
         return self.instr.query("2 POS?\n")
+    def get_target(self):
+        return self.instr.query("2 MOV?\n")
+    def on_target(self):
+        return abs(float(self.get_position()[6:])-float(self.get_target()[6:]))<0.01
 
 class Stage3():
     def __init__(self):
@@ -130,6 +138,13 @@ class Stage3():
         self.xstage.set_position(int(round((x+0)*10**4)))
         self.ystage.set_position(y)
         self.zstage.set_position(int(round(z*2*10**3)))
+        if abs(float(self.zstage.get_position()[3:])/(2*10**3)-z)>1:
+            time.sleep(3)
+
+        for i in range(0,1000):
+            time.sleep(.1)
+            if self.xstage.on_target() & self.ystage.on_target():
+                break
 
     def get_pos_mm(self):
         xp=float(self.xstage.get_position()[3:])/(10**4)-0

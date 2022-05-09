@@ -13,10 +13,11 @@ import numpy as np
 
 class App(QWidget):
 
-    def __init__(self,mono,lockin):
+    def __init__(self,mono,lockin,stage):
         super().__init__()
         self.mono=mono
         self.lockin=lockin
+        self.stage=stage
         self.title='EFM MIR Photocurrent Control'
         self.setWindowTitle(self.title)
 
@@ -24,7 +25,8 @@ class App(QWidget):
         self.mono_layout=qtgui_mono.QtGuiMono(mono)
         instr_layout.addLayout(self.mono_layout)
         instr_layout.addLayout(qtgui_lockin.QtGuiLockin(lockin))
-        instr_layout.addLayout(qtgui_sample.QtGuiSample(lockin))
+        stage_layout=qtgui_sample.QtGuiSample(lockin,stage)
+        instr_layout.addLayout(stage_layout)
 
         layout=QVBoxLayout()
         scan_layout=qtgui_scan.QtGuiScan(self)
