@@ -20,16 +20,16 @@ class App(QWidget):
         self.stage=stage
         self.title='EFM MIR Photocurrent Control'
         self.setWindowTitle(self.title)
+        scan_layout=qtgui_scan.QtGuiScan(self)
 
         instr_layout=QHBoxLayout()
         self.mono_layout=qtgui_mono.QtGuiMono(mono)
         instr_layout.addLayout(self.mono_layout)
         instr_layout.addLayout(qtgui_lockin.QtGuiLockin(lockin))
-        stage_layout=qtgui_sample.QtGuiSample(lockin,stage)
+        stage_layout=qtgui_sample.QtGuiSample(lockin,stage,scan_layout.figure,scan_layout.canvas)
         instr_layout.addLayout(stage_layout)
 
         layout=QVBoxLayout()
-        scan_layout=qtgui_scan.QtGuiScan(self)
         layout.addLayout(scan_layout)
         layout.addLayout(instr_layout)
         self.setLayout(layout)

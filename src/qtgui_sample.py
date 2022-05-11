@@ -1,12 +1,16 @@
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QPushButton, QMessageBox, QLineEdit, QMainWindow, QVBoxLayout,QHBoxLayout,QComboBox
 from PyQt5.QtCore import QThread,pyqtSignal
 import time
+import numpy as np
+import matplotlib.pyplot as plt
 
 class QtGuiSample(QVBoxLayout):
-    def __init__(self,lockin,stage):
+    def __init__(self,lockin,stage,figure,canvas):
         super().__init__()
         self.lockin=lockin
         self.stage=stage
+        self.figure=figure
+        self.canvas=canvas
         
 
         self.sample_bias_label=QLabel('DUT voltage bias / V')
@@ -56,40 +60,61 @@ class QtGuiSample(QVBoxLayout):
         self.sample_xmin_label=QLabel('x min')
         self.sample_xmin_box=QLineEdit()
         self.sample_xmin_box.setText("0")
+        self.sample_xstp_label=QLabel('x step')
+        self.sample_xstp_box=QLineEdit()
+        self.sample_xstp_box.setText("1")
         self.sample_xmax_label=QLabel('x max')
         self.sample_xmax_box=QLineEdit()
-        self.sample_xmax_box.setText("0")
+        self.sample_xmax_box.setText("20")
         self.sample_ymin_label=QLabel('y min')
         self.sample_ymin_box=QLineEdit()
         self.sample_ymin_box.setText("0")
+        self.sample_ystp_label=QLabel('y step')
+        self.sample_ystp_box=QLineEdit()
+        self.sample_ystp_box.setText("2")
         self.sample_ymax_label=QLabel('y max')
         self.sample_ymax_box=QLineEdit()
-        self.sample_ymax_box.setText("0")
+        self.sample_ymax_box.setText("50")
         self.sample_spcm_button=QPushButton('Map')
         self.sample_spcm_button.clicked.connect(self.sample_spcm_button_clicked)
         self.sample_opt_button=QPushButton('Maximize')
         self.sample_opt_button.clicked.connect(self.sample_opt_button_clicked)
-        sample_min_layout=QHBoxLayout()
-        sample_min_layout.addWidget(self.sample_xmin_label)
-        sample_min_layout.addWidget(self.sample_xmin_box)
-        sample_min_layout.addWidget(self.sample_ymin_label)
-        sample_min_layout.addWidget(self.sample_ymin_box)
-        sample_min_layout.addWidget(self.sample_spcm_button)
-        sample_max_layout=QHBoxLayout()
-        sample_max_layout.addWidget(self.sample_xmax_label)
-        sample_max_layout.addWidget(self.sample_xmax_box)
-        sample_max_layout.addWidget(self.sample_ymax_label)
-        sample_max_layout.addWidget(self.sample_ymax_box)
-        sample_max_layout.addWidget(self.sample_opt_button)
+
+        sample_x_layout=QHBoxLayout()
+        sample_x_layout.addWidget(self.sample_xmin_label)
+        sample_x_layout.addWidget(self.sample_xmin_box)
+        sample_x_layout.addWidget(self.sample_xstp_label)
+        sample_x_layout.addWidget(self.sample_xstp_box)
+        sample_x_layout.addWidget(self.sample_xmax_label)
+        sample_x_layout.addWidget(self.sample_xmax_box)
+        sample_x_layout.addWidget(self.sample_spcm_button)
+        sample_y_layout=QHBoxLayout()
+        sample_y_layout.addWidget(self.sample_ymin_label)
+        sample_y_layout.addWidget(self.sample_ymin_box)
+        sample_y_layout.addWidget(self.sample_ystp_label)
+        sample_y_layout.addWidget(self.sample_ystp_box)
+        sample_y_layout.addWidget(self.sample_ymax_label)
+        sample_y_layout.addWidget(self.sample_ymax_box)
+        sample_y_layout.addWidget(self.sample_opt_button)
 
 
         self.addLayout(sample_bias_layout)
         self.addLayout(sample_irange_layout)
         self.addLayout(sample_pos_layout)
-        self.addLayout(sample_min_layout)
-        self.addLayout(sample_max_layout)
+        self.addLayout(sample_x_layout)
+        self.addLayout(sample_y_layout)
     def sample_spcm_button_clicked(self):
+        self.lockin.set_input(1)
+        #set pos init
+        #time.sleep(20*self.lockin.get_timeconst())
+        xrange=np.arange(float(self.sample_xmin_box.text()),float(self.sample_xmax_box.text())+1e-5,float(self.sample_xstp_box.text()))
+        yrange=np.arange(float(self.sample_ymin_box.text()),float(self.sample_ymax_box.text())+1e-5,float(self.sample_ystp_box.text()))
+        self.thread=XYThread(self,self.stage,self.lockin,xrange,yrange)
+        self.thread._signal.connect(self.measure_xy_received)
+        self.thread.start()
+    def measure_xy_received(self,msg):
         pass
+        
     def sample_opt_button_clicked(self):
         pass
     def sample_irange_button_clicked(self):
@@ -121,5 +146,32 @@ class QtGuiSample(QVBoxLayout):
         self.sample_y_box.setText("{:f}".format(stagepos[1]))
         self.sample_z_box.setText("{:f}".format(stagepos[2]))
 
-
+class XYThread(QThread):
+    _signal=pyqtSignal(list)
+    def __init__(self,caller,stage,lockin,xrange,yrange):
+        super(XYThread,self).__init__()
+        self.parent=caller
+        self.stage=stage
+        self.lockin=lockin
+        self.xrange=xrange
+        self.yrange=yrange
+    def __del__(self):
+        self.wait()
+    def run(self):
+        spos=self.stage.get_pos_mm()
+        data=np.zeros((self.yrange.size,self.xrange.size))
+        for i1 in range(self.xrange.size):
+            for i2 in range(self.yrange.size):
+                self.stage.set_pos_mm(self.xrange[i1],self.yrange[i2],spos[2])
+                time.sleep(10*self.lockin.get_timeconst())
+                data[i2,i1]=self.lockin.get_R()
+            self.parent.figure.clear()
+            ax=self.parent.figure.add_subplot(111)
+            ax.pcolor(self.xrange[0:i1+1],self.yrange,data[:,0:i1+1])
+            ax.colorbar()
+            ax.set_xlabel("x / mm")
+            ax.set_ylabel("y / mm")
+            self.parent.canvas.draw()
+        print("XY scan done")
+        self._signal.emit([self.xrange])
 
