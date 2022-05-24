@@ -3,6 +3,7 @@ from PyQt5.QtCore import QThread,pyqtSignal
 import time
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.optimize import minimize
 
 class QtGuiSample(QVBoxLayout):
     def __init__(self,lockin,stage,figure,canvas):
@@ -116,6 +117,11 @@ class QtGuiSample(QVBoxLayout):
         pass
         
     def sample_opt_button_clicked(self):
+        self.lockin.set_input(1)
+        startval=[.5*(float(self.sample_xmin_box.text())+float(self.sample_xmax_box.text())),.5*(float(self.sample_ymin_box.text())+float(self.sample_ymax_box.text()))]
+        self.thread=OptThread(self,self.stage,self.lockin,startval)
+        self.thread._signal.connect(self.measure_xy_received)
+        self.thread.start()
         pass
     def sample_irange_button_clicked(self):
         try:
@@ -168,10 +174,34 @@ class XYThread(QThread):
             self.parent.figure.clear()
             ax=self.parent.figure.add_subplot(111)
             ax.pcolor(self.xrange[0:i1+1],self.yrange,data[:,0:i1+1])
-            ax.colorbar()
+            #ax.colorbar()
             ax.set_xlabel("x / mm")
             ax.set_ylabel("y / mm")
             self.parent.canvas.draw()
         print("XY scan done")
         self._signal.emit([self.xrange])
 
+class OptThread(QThread):
+    _signal=pyqtSignal(list)
+    def __init__(self,caller,stage,lockin,startval):
+        super(OptThread,self).__init__()
+        self.parent=caller
+        self.stage=stage
+        self.lockin=lockin
+        self.startval=startval
+        print(startval)
+    def __del__(self):
+        self.wait()
+    def run(self):
+        spos=self.stage.get_pos_mm()
+        def objective(xy):
+            self.stage.set_pos_mm(xy[0],xy[1],spos[2])
+            time.sleep(10*self.lockin.get_timeconst())
+            print(xy)
+            print(self.lockin.get_R())
+            return 1/self.lockin.get_R()
+
+        result=minimize(objective,self.startval,method='nelder-mead')
+        print(result)
+        print("XY scan done")
+        self._signal.emit([result])
