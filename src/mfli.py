@@ -24,6 +24,9 @@ class MFLI():
         self.scope.set('save/directory', '/data/LabOne/WebServer')
         self.daq.setInt('/dev5880/auxouts/3/outputselect', -1)#use aux3 as bias, set to -1
         self.daq.setDouble('/dev5880/oscs/0/freq', 5.67)
+        self.set_output_voltage_range(10)
+        self.set_bias(1)
+        self.set_output_amplitude(1)
     #set oscillator frequency in Hz
     def set_oscillator(self,freq):
         self.daq.setDouble('/dev5880/oscs/0/freq', freq)

@@ -7,6 +7,7 @@ class Stage(ABC):
         pass
 
 class C863(Stage):
+    #create stage object
     def __init__(self,instr,bus_address,maxpos):
         self.instr=instr
         self.maxpos=maxpos
@@ -15,8 +16,10 @@ class C863(Stage):
         else:
             self.instr.write_raw(b'\x01\x30') #default bus address is 0
         print(self.on_target())
+    #get name of stage
     def get_name(self):
         return self.instr.query("VE\r")
+    #go to low limit
     def go_low(self):
         print("finding stage home at low end")
         self.instr.write("MN\r")
@@ -24,7 +27,7 @@ class C863(Stage):
         self.instr.write('FE1\r')
         time.sleep(5)
         self.instr.write('DH\r')
-     #   print("stage home found")
+    #go to center of range
     def go_center(self):
         print("finding stage home at center")
         self.instr.write("MN\r")
@@ -51,7 +54,11 @@ class C863(Stage):
     def get_position(self):
         return self.instr.query("TP\r")
     def on_target(self):
-        return int(self.instr.query("TE\r")[3:])<10
+        try:
+            posval=int(self.instr.query("TE\r")[3:])
+        except:
+            posval=0
+        return posval<10
 
 
 def find_xstage(rm):

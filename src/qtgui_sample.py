@@ -105,6 +105,7 @@ class QtGuiSample(QVBoxLayout):
         self.addLayout(sample_x_layout)
         self.addLayout(sample_y_layout)
     def sample_spcm_button_clicked(self):
+        print("map acquisition")
         self.lockin.set_input(1)
         #set pos init
         #time.sleep(20*self.lockin.get_timeconst())
@@ -115,12 +116,16 @@ class QtGuiSample(QVBoxLayout):
         self.thread.start()
     def measure_xy_received(self,msg):
         pass
+    def opt_received(self,msg):
+        spos=self.stage.get_pos_mm()
+        self.stage.set_pos_mm(msg[0],msg[1],spos[2])
+        
         
     def sample_opt_button_clicked(self):
         self.lockin.set_input(1)
         startval=[.5*(float(self.sample_xmin_box.text())+float(self.sample_xmax_box.text())),.5*(float(self.sample_ymin_box.text())+float(self.sample_ymax_box.text()))]
         self.thread=OptThread(self,self.stage,self.lockin,startval)
-        self.thread._signal.connect(self.measure_xy_received)
+        self.thread._signal.connect(self.opt_received)
         self.thread.start()
         pass
     def sample_irange_button_clicked(self):
@@ -166,11 +171,13 @@ class XYThread(QThread):
     def run(self):
         spos=self.stage.get_pos_mm()
         data=np.zeros((self.yrange.size,self.xrange.size))
+        print("scanning")
         for i1 in range(self.xrange.size):
             for i2 in range(self.yrange.size):
                 self.stage.set_pos_mm(self.xrange[i1],self.yrange[i2],spos[2])
                 time.sleep(10*self.lockin.get_timeconst())
                 data[i2,i1]=self.lockin.get_R()
+                print([self.xrange[i1],self.yrange[i2]])
             self.parent.figure.clear()
             ax=self.parent.figure.add_subplot(111)
             ax.pcolor(self.xrange[0:i1+1],self.yrange,data[:,0:i1+1])
@@ -201,7 +208,8 @@ class OptThread(QThread):
             print(self.lockin.get_R())
             return 1/self.lockin.get_R()
 
-        result=minimize(objective,self.startval,method='nelder-mead')
+        result=minimize(objective,self.startval,method='nelder-mead',xatol=.01)
+        result=result.x
         print(result)
         print("XY scan done")
         self._signal.emit([result])
