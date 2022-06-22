@@ -1,13 +1,17 @@
 #import time
 import zhinst.ziPython as zi
 import math
+#to control the zhinst mfli lock-in
 class MFLI():
     def __init__(self):
+        #find it
         discovery = zi.ziDiscovery()
         device_id = discovery.find('MF-DEV5880')
+        #create object
         device_props = discovery.get(device_id)
         self.daq = zi.ziDAQServer(device_props['serveraddress'], device_props['serverport'], device_props['apilevel'])
         self.scope = self.daq.scopeModule()
+        #inits, probably unnecessary
         self.daq.setInt('/dev5880/auxouts/2/demodselect', 0)
         self.daq.setInt('/dev5880/auxouts/2/demodselect', 0)
         self.daq.setInt('/dev5880/auxouts/3/demodselect', 0)
@@ -23,10 +27,15 @@ class MFLI():
         self.scope.set('fft/window', 1)
         self.scope.set('save/directory', '/data/LabOne/WebServer')
         self.daq.setInt('/dev5880/auxouts/3/outputselect', -1)#use aux3 as bias, set to -1
+        #start with 5.67Hz lock-in
         self.daq.setDouble('/dev5880/oscs/0/freq', 5.67)
         self.set_output_voltage_range(10)
-        self.set_bias(1)
+        #bias for device
+        self.set_bias(0)
+        #amplitude and offset for shutter TTL
         self.set_output_amplitude(1)
+        self.daq.setInt('/dev5880/sigouts/0/on', 1)
+        self.daq.setDouble('/dev5880/sigouts/0/offset', 1)
     #set oscillator frequency in Hz
     def set_oscillator(self,freq):
         self.daq.setDouble('/dev5880/oscs/0/freq', freq)

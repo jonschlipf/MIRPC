@@ -2,10 +2,13 @@ from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QPushButton, QMessage
 from PyQt5.QtCore import QThread,pyqtSignal
 import time
 
+#part of the gui controlling the lockin
 class QtGuiLockin(QVBoxLayout):
     def __init__(self,lockin):
         super().__init__()
         self.lockin=lockin
+
+        #gui function is described in manual
         self.oscillator_label=QLabel('Oscillator frequency f / Hz')
         self.oscillator_box=QLineEdit()
         self.oscillator_box.setText("{:.2f}".format(self.lockin.get_oscillator()))
@@ -64,6 +67,7 @@ class QtGuiLockin(QVBoxLayout):
         self.addLayout(lockin_order_layout)
         self.addLayout(lockin_timeconst_layout)
         self.addLayout(lockin_vrange_layout)
+    #methods that deal with button events, and set lock-in params
     def oscillator_button_clicked(self):
         try:
             self.lockin.set_oscillator(float(self.oscillator_box.text()))

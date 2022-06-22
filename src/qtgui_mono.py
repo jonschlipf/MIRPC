@@ -2,10 +2,13 @@ from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QPushButton, QMessage
 from PyQt5.QtCore import QThread,pyqtSignal
 import time
 
+#gui buttons to control the ihr320 monochromator
 class QtGuiMono(QVBoxLayout):
     def __init__(self,mono):
         super().__init__()
+
         self.mono=mono
+        #see manual for explanation
         self.grating_label=QLabel('Grating')
         self.grating_box=QComboBox()
         self.grating_box.addItems(['G1','G2','G3'])
@@ -60,6 +63,7 @@ class QtGuiMono(QVBoxLayout):
         self.addLayout(mono_filter_layout)
         self.addLayout(mono_entr_slit_layout)
         self.addLayout(mono_exit_slit_layout)
+    #process button inputs to directly set hardware properties
     def wavelength_button_clicked(self):
         try:
             self.mono.set_wavelength(float(self.wavelength_box.text()))

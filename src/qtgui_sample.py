@@ -5,6 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.optimize import minimize
 
+#part of the gui responsible for sample stage and biasing
 class QtGuiSample(QVBoxLayout):
     def __init__(self,lockin,stage,figure,canvas):
         super().__init__()
@@ -14,6 +15,7 @@ class QtGuiSample(QVBoxLayout):
         self.canvas=canvas
         
 
+        #elements are explained in manual
         self.sample_bias_label=QLabel('DUT voltage bias / V')
         self.sample_bias_box=QLineEdit()
         self.sample_bias_box.setText("{:f}".format(self.lockin.get_bias()))
@@ -104,30 +106,39 @@ class QtGuiSample(QVBoxLayout):
         self.addLayout(sample_pos_layout)
         self.addLayout(sample_x_layout)
         self.addLayout(sample_y_layout)
+    #pseudo-spcm, to see where the device is inrelation to the beam
     def sample_spcm_button_clicked(self):
         print("map acquisition")
+        #record current
         self.lockin.set_input(1)
-        #set pos init
-        #time.sleep(20*self.lockin.get_timeconst())
+        #set position range
         xrange=np.arange(float(self.sample_xmin_box.text()),float(self.sample_xmax_box.text())+1e-5,float(self.sample_xstp_box.text()))
         yrange=np.arange(float(self.sample_ymin_box.text()),float(self.sample_ymax_box.text())+1e-5,float(self.sample_ystp_box.text()))
+        #launch QT thread. multi-threading allows for change in parameters while scanning
         self.thread=XYThread(self,self.stage,self.lockin,xrange,yrange)
         self.thread._signal.connect(self.measure_xy_received)
         self.thread.start()
     def measure_xy_received(self,msg):
         pass
+    #after maximizing photocurrent
     def opt_received(self,msg):
         spos=self.stage.get_pos_mm()
+        #set the stage to the found optimum
         self.stage.set_pos_mm(msg[0],msg[1],spos[2])
         
         
+    #for optimization
     def sample_opt_button_clicked(self):
+        #measure current
         self.lockin.set_input(1)
+        #start in the center of scan position interval
         startval=[.5*(float(self.sample_xmin_box.text())+float(self.sample_xmax_box.text())),.5*(float(self.sample_ymin_box.text())+float(self.sample_ymax_box.text()))]
+        #multi-threading
         self.thread=OptThread(self,self.stage,self.lockin,startval)
         self.thread._signal.connect(self.opt_received)
         self.thread.start()
         pass
+    #set current range
     def sample_irange_button_clicked(self):
         try:
             self.lockin.set_input_current_range(float(self.sample_irange_box.text()))
@@ -135,6 +146,7 @@ class QtGuiSample(QVBoxLayout):
             print("wrong type")
         time.sleep(.1)
         self.sample_irange_box.setText("{:f}".format(self.lockin.get_input_current_range()))
+    #auto current range
     def sample_irange_auto_button_clicked(self):
         try:
             self.lockin.auto_input_current_range()
@@ -142,6 +154,7 @@ class QtGuiSample(QVBoxLayout):
             print("wrong type")
         time.sleep(1)
         self.sample_irange_box.setText("{:f}".format(self.lockin.get_input_current_range()))
+    #set sample bias voltage
     def sample_bias_button_clicked(self):
         try:
             self.lockin.set_bias(float(self.sample_bias_box.text()))
@@ -149,6 +162,7 @@ class QtGuiSample(QVBoxLayout):
             print("wrong type")
         time.sleep(.1)
         self.sample_bias_box.setText("{:f}".format(self.lockin.get_bias()))
+    #set stage to selected position
     def sample_pos_button_clicked(self):
         self.stage.set_pos_mm(float(self.sample_x_box.text()),float(self.sample_y_box.text()),float(self.sample_z_box.text()))
         time.sleep(.1)
@@ -157,6 +171,7 @@ class QtGuiSample(QVBoxLayout):
         self.sample_y_box.setText("{:f}".format(stagepos[1]))
         self.sample_z_box.setText("{:f}".format(stagepos[2]))
 
+#thread for xy scan
 class XYThread(QThread):
     _signal=pyqtSignal(list)
     def __init__(self,caller,stage,lockin,xrange,yrange):
@@ -169,22 +184,30 @@ class XYThread(QThread):
     def __del__(self):
         self.wait()
     def run(self):
+        #get current pos to preserve z
         spos=self.stage.get_pos_mm()
         data=np.zeros((self.yrange.size,self.xrange.size))
         print("scanning")
+        #row
         for i1 in range(self.xrange.size):
+            #column
             for i2 in range(self.yrange.size):
+                #set pos
                 self.stage.set_pos_mm(self.xrange[i1],self.yrange[i2],spos[2])
-                time.sleep(10*self.lockin.get_timeconst())
+                #wait
+                time.sleep(2*self.lockin.get_timeconst())
+                #measure
                 data[i2,i1]=self.lockin.get_R()
                 print([self.xrange[i1],self.yrange[i2]])
             self.parent.figure.clear()
+            #plot current state of map
             ax=self.parent.figure.add_subplot(111)
             ax.pcolor(self.xrange[0:i1+1],self.yrange,data[:,0:i1+1])
             #ax.colorbar()
             ax.set_xlabel("x / mm")
             ax.set_ylabel("y / mm")
             self.parent.canvas.draw()
+        #done
         print("XY scan done")
         self._signal.emit([self.xrange])
 
@@ -200,14 +223,20 @@ class OptThread(QThread):
     def __del__(self):
         self.wait()
     def run(self):
+        #get pos to preserve z
         spos=self.stage.get_pos_mm()
+        #objective for nelder-mead
         def objective(xy):
+            #go to position
             self.stage.set_pos_mm(xy[0],xy[1],spos[2])
-            time.sleep(10*self.lockin.get_timeconst())
+            #wait
+            time.sleep(2*self.lockin.get_timeconst())
             print(xy)
+            #measure
             print(self.lockin.get_R())
             return 1/self.lockin.get_R()
 
+        #optimize
         result=minimize(objective,self.startval,method='nelder-mead',xatol=.01)
         result=result.x
         print(result)

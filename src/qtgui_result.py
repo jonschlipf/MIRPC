@@ -2,6 +2,8 @@ from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QPushButton, QMessage
 from PyQt5.QtCore import QThread,pyqtSignal
 import time
 
+
+#could show current lock-in result, currently not used
 class QtGuiResult(QVBoxLayout):
     def __init__(self,lockin):
         super().__init__()
