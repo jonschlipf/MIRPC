@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QPushButton, QMessageBox, QLineEdit, QMainWindow, QVBoxLayout,QHBoxLayout,QComboBox
+from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QPushButton, QMessageBox, QLineEdit, QMainWindow, QVBoxLayout,QHBoxLayout,QComboBox,QFileDialog
 from PyQt5.QtCore import QThread,pyqtSignal
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg,NavigationToolbar2QT
 
@@ -54,7 +54,11 @@ class QtGuiScan(QVBoxLayout):
         tosv=[]
         tosv.append(msg[0])
         tosv.append(msg[1])
-        np.savetxt("diode.csv", np.array(tosv).T, delimiter=",",header="lambda/nm,I/A")
+        filename,filetype=QFileDialog.getSaveFileName(self.parent,"Save diode spectrum","./dut.csv","*.csv")
+        try:
+            np.savetxt(filename, np.array(tosv).T, delimiter=",",header="lambda/nm,I/A")
+        except FileNotFoundError:
+            pass
         self.parent.mono_layout.wavelength_box.setText("{:.2f}".format(self.parent.mono.get_wavelength()))
     def measure_ref(self):
         self.parent.lockin.set_input(0)
@@ -68,7 +72,11 @@ class QtGuiScan(QVBoxLayout):
         tosv=[]
         tosv.append(msg[0])
         tosv.append(msg[1])
-        np.savetxt("reference.csv", np.array(tosv).T, delimiter=",",header="lambda/nm,V/V")
+        filename,filetype=QFileDialog.getSaveFileName(self.parent,"Save reference spectrum","./reference.csv","*.csv")
+        try:
+            np.savetxt(filename, np.array(tosv).T, delimiter=",",header="lambda/nm,V/V")
+        except FileNotFoundError:
+            pass
         self.parent.mono_layout.wavelength_box.setText("{:.2f}".format(self.parent.mono.get_wavelength()))
 
 
@@ -91,7 +99,7 @@ class SpectrumThreadI(QThread):
             print(self.lam[i])
             self.mono.set_wavelength(self.lam[i])
             print("wl set")
-            time.sleep(10*self.lockin.get_timeconst())
+            time.sleep(2*self.lockin.get_timeconst())
             data[i]=self.lockin.get_R()
             print(data[i])
             self.parent.figure.clear()
@@ -122,7 +130,7 @@ class SpectrumThreadV(QThread):
             print(self.lam[i])
             self.mono.set_wavelength(self.lam[i])
             print("wl set")
-            time.sleep(10*self.lockin.get_timeconst())
+            time.sleep(2*self.lockin.get_timeconst())
             data[i]=self.lockin.get_Y()
             print(data[i])
             self.parent.figure.clear()
