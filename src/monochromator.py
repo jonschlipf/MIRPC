@@ -51,7 +51,7 @@ class Monochromator():
                 time.sleep(1)
             time.sleep(1)
         #set wavelength again
-        self.set_wavelength(temp_wl)
+#        self.set_wavelength(temp_wl)
         #update grating info
         self.grating=self._get_grating_int()
     def get_grating(self):

@@ -40,7 +40,7 @@ class C863(Stage):
         self.instr.write("BF\r")
         time.sleep(1)
         #move forward
-        self.instr.write(f"MA80000\r")
+        self.instr.write(f"MA20000\r")
         time.sleep(5)
         #find edge
         self.instr.write('FE2\r')
