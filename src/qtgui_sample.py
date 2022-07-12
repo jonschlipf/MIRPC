@@ -199,6 +199,7 @@ class XYThread(QThread):
                 #measure
                 data[i2,i1]=self.lockin.get_R()
                 print([self.xrange[i1],self.yrange[i2]])
+                print(data[i2,i1])
             self.parent.figure.clear()
             #plot current state of map
             ax=self.parent.figure.add_subplot(111)

@@ -79,11 +79,11 @@ class Monochromator():
     #automatically selects appropriate filter based on wavelength
     def auto_filter(self):
         if self.filter==0:
-            if self.wavelength<1100:
+            if self.wavelength<1000:
                 self._set_filter_int(1)
-            elif self.wavelength<2000:
+            elif self.wavelength<1900:
                 self._set_filter_int(2)
-            elif self.wavelength<3600:
+            elif self.wavelength<3500:
                 self._set_filter_int(3)
             else:
                 self._set_filter_int(4)
