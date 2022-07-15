@@ -147,7 +147,7 @@ class Monochromator():
         if (wl0<0) or (wl0>1580 * 1200 /(150*2**self._get_grating_int())):
             wl0=0
         #while target not reached
-        while abs(wl0-self._get_wavelength_int())>.001*wl0:
+        while abs(wl0-self._get_wavelength_int())>.1:
             #compute value to send
             wl=wl0*(150*2**self._get_grating_int())/1200
             #set wl 
